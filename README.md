@@ -1,141 +1,290 @@
+# 🔐 Secure Chat Application — Phase 2 (Diffie-Hellman Integration)
 
+## 📌 Overview
 
-```markdown
-# 🔐 Secure Chat System (From Scratch)
+This phase represents the integration of **Diffie-Hellman (DH) Key Exchange** into a multi-client chat system. The goal was to move from a simple messaging system to a **cryptography-aware communication system**.
 
-A step-by-step implementation of a secure messaging system, starting from basic socket communication and evolving towards cryptographically secure communication.
+The implementation focuses on:
 
-This project is built to deeply understand how real-world secure systems (like WhatsApp, Signal, TLS) work internally.
-
----
-
-## 🚀 Phase 1: Basic Chat System
-
-This phase implements a real-time multi-client chat system using Java sockets.
-
-### ✨ Features
-- Multi-client support
-- Real-time message exchange
-- Server-based message broadcasting
-- Username-based message identification
-- Multi-threaded client handling
+* Public key exchange between clients
+* Shared secret generation using DH
+* Handling real-world issues in distributed systems
+* Understanding how secure communication actually works
 
 ---
 
-## 🧠 Architecture
+## 🚀 What This Version Supports
+
+* Multi-client chat via server
+* Dynamic client connections
+* Public key exchange using Diffie-Hellman
+* Shared key generation on each client
+* Real-time message handling using threads
+
+---
+
+## 🚨 Problems Faced
+
+### ❌ 1. Shared key not establishing on all clients
+
+**Symptoms:**
+
+* Only one side generated the shared key
+* Other clients did not show “Shared key established”
+* Confusion about whether DH was working correctly
+
+---
+
+### ❌ 2. Large “weird” KEY messages in console
+
+Example:
 
 ```
-
-![alt text](image.png)
-![alt text](image-1.png)
-
-````
-
-- Server acts as a message relay (no processing)
-- Each client runs on a separate thread
-- Full-duplex communication (send & receive simultaneously)
-
----
-
-## ⚙️ Tech Stack
-
-- Java (Core)
-- Sockets (`Socket`, `ServerSocket`)
-- Multithreading
-- Buffered I/O
-
----
-
-## 🛠️ How to Run
-
-### 1. Compile
-
-```bash
-javac src/Server.java
-javac src/Client.java
-````
-
----
-
-### 2. Start Server
-
-```bash
-java src.Server
+KEY:MIIC...
 ```
 
-Output:
+**Symptoms:**
+
+* Flooding of console
+* Looked like abnormal behavior
+
+---
+
+### ❌ 3. Misunderstanding of shared key behavior
+
+Assumption:
 
 ```
-Server started on port 1234
+All clients should have SAME shared key
 ```
 
 ---
 
-### 3. Start Clients (Open 2 Terminals)
+## 🧠 Root Cause Analysis
 
-```bash
-java src.Client
+### 🔍 1. One-way key processing
+
+* Clients were receiving public keys
+* But not properly processing them in all cases
+
+---
+
+### 🔍 2. Message handling not clearly separated
+
+Initially:
+
+* All messages treated the same
+* No clear distinction between:
+
+  * Chat messages
+  * Key exchange messages
+
+---
+
+### 🔍 3. Incorrect expectation from Diffie-Hellman
+
+Reality:
+
+| Pair  | Shared Key |
+| ----- | ---------- |
+| A ↔ B | Same       |
+| A ↔ C | Different  |
+| B ↔ C | Different  |
+
+👉 DH creates **pairwise shared secrets**, not a global key
+
+---
+
+## ✅ Solutions Implemented
+
+---
+
+### 🔧 1. Message Type Handling
+
+Client now checks:
+
+```java
+if(message.startsWith("KEY:"))
+```
+
+👉 This ensures:
+
+* Key messages are processed separately
+* Normal chat messages are printed
+
+---
+
+### 🔧 2. Public Key Extraction & Validation
+
+```java
+String keyBase64 = message.substring(4).trim();
+```
+
+Added checks:
+
+```java
+if(keyBase64.isEmpty()) return;
+if(keyBase64.length() < 50) return;
+```
+
+👉 Prevents:
+
+* Invalid or corrupted keys
+* Crashes due to bad input
+
+---
+
+### 🔧 3. Public Key Reconstruction
+
+```java
+byte[] keyBytes = Base64.getDecoder().decode(keyBase64);
+
+KeyFactory keyFactory = KeyFactory.getInstance("DH");
+X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+PublicKey otherPublicKey = keyFactory.generatePublic(keySpec);
+```
+
+👉 Converts received key into usable object
+
+---
+
+### 🔧 4. Shared Secret Generation
+
+```java
+finalKeyAgree.doPhase(otherPublicKey, true);
+byte[] sharedSecret = finalKeyAgree.generateSecret();
+```
+
+👉 Core Diffie-Hellman logic
+
+---
+
+### 🔧 5. Multi-threaded Client Handling
+
+#### Thread 1 → Receive messages
+
+* Listens to server
+* Handles KEY messages
+* Prints chat messages
+
+#### Thread 2 → Send messages
+
+* Takes user input
+* Sends to server
+
+👉 Enables real-time communication
+
+---
+
+## 🔐 Key Learning
+
+### ✔ Diffie-Hellman Behavior
+
+```text
+Same shared key → only between 2 clients
+Different pairs → different keys
 ```
 
 ---
 
-### 4. Enter Username
+### ✔ Why “weird text” appeared
 
 ```
-Enter your username:
-Alice
+KEY:MIIC...
 ```
 
----
+👉 This is:
 
-### 💬 Sample Chat
-
-c:\Users\palak\OneDrive\Pictures\Screenshots 1\Screenshot 2026-03-19 110622.png
-
----
-
-## ⚠️ Limitations (Intentional for Learning)
-
-* No encryption (messages are plain text)
-* Server can read all messages
-* No authentication (anyone can impersonate)
+* Base64 encoded public key
+* Completely normal
+* Required for key exchange
 
 ---
 
-## 🔐 Upcoming Phases
+### ✔ Why keys looked different
 
-* Phase 2: Diffie-Hellman Key Exchange
-* Phase 3: AES Encryption for Messages
-* Phase 4: Man-in-the-Middle (MITM) Attack Simulation
-* Phase 5: Authentication using Digital Signatures
+* Each client has different private key
+* Shared secret depends on both participants
 
----
+👉 Hence:
 
-## 🎯 Goal of This Project
-
-To build and break a secure communication system from scratch and understand:
-
-* Why encryption alone is not enough
-* How key exchange works
-* How real-world attacks happen
-* How to design secure systems
-
----
-
-## 👨‍💻 Author
-
-Built as a hands-on learning project to explore cryptography and secure system design.
-
+```
+Different clients → different shared keys
 ```
 
 ---
 
-### 🔍 Key Learning
+## ⚠️ Current Limitations
 
-```markdown
-- Understood full-duplex communication using threads
-- Learned how servers handle multiple clients concurrently
-- Designed a basic communication pipeline for future encryption layers
+### ❌ 1. Shared keys are not stored properly
+
+```java
+Map<String, SecretKey> sharedKeys = new HashMap<>();
+```
+
+👉 Declared but not used fully
+
+---
+
+### ❌ 2. Shared key printed incorrectly
+
+```java
+System.out.println("Shared key is "+sharedSecret);
+```
+
+👉 This prints memory reference, not actual key
+
+---
+
+### ❌ 3. No encryption yet
+
+* Messages are still plain text
+* Shared key is not used for AES encryption
+
+---
+
+## 🧪 Validation
+
+✔ Clients successfully:
+
+* Send public keys
+* Receive public keys
+* Generate shared secret
+
+✔ No crashes during key exchange
+✔ Stable communication achieved
+
+---
+
+## 🚀 What This Phase Achieved
+
+* Integrated real cryptographic protocol
+* Debugged distributed key exchange issues
+* Understood practical behavior of DH
+* Built foundation for secure messaging
+
+---
+
+## 🔮 Next Phase
+
+* Store keys per client properly
+* Convert shared secret → AES key
+* Encrypt messages before sending
+* Decrypt messages on receiving side
+
+---
+
+## 💡 Final Insight
+
+```
+The issue was not in cryptography,
+but in how messages and data were handled in the system
+```
+
+This phase marks the shift from:
+
+```
+Basic programming → System-level thinking
 ```
 
 ---
