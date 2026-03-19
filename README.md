@@ -1,141 +1,167 @@
+# 🔐 Secure Chat System (Built From Scratch)
 
+A hands-on project to understand how real-world secure communication systems (like WhatsApp, Signal, TLS) actually work — by building one step-by-step from the ground up.
 
-```markdown
-# 🔐 Secure Chat System (From Scratch)
-
-A step-by-step implementation of a secure messaging system, starting from basic socket communication and evolving towards cryptographically secure communication.
-
-This project is built to deeply understand how real-world secure systems (like WhatsApp, Signal, TLS) work internally.
+This project starts with a basic chat system and evolves towards a **cryptographically secure messaging system**.
 
 ---
 
-## 🚀 Phase 1: Basic Chat System
+## 🚀 Phase 1 — Multi-Client Chat System
 
-This phase implements a real-time multi-client chat system using Java sockets.
+This phase implements a real-time chat application using **Java sockets and multithreading**.
 
 ### ✨ Features
-- Multi-client support
-- Real-time message exchange
-- Server-based message broadcasting
-- Username-based message identification
-- Multi-threaded client handling
+
+* 👥 Multiple clients can connect simultaneously
+* 💬 Real-time message exchange
+* 📡 Server-based message broadcasting
+* 🏷️ Username-based identification
+* ⚡ Full-duplex communication (send & receive at the same time)
 
 ---
 
 ## 🧠 Architecture
 
-```
+* The **server acts as a relay** (it only forwards messages)
+* Each client runs on a **separate thread**
+* Communication is **bi-directional and continuous**
 
-![alt text](image.png)
-![alt text](image-1.png)
-
-````
-
-- Server acts as a message relay (no processing)
-- Each client runs on a separate thread
-- Full-duplex communication (send & receive simultaneously)
+*(Add your architecture images below if needed)*
 
 ---
 
 ## ⚙️ Tech Stack
 
-- Java (Core)
-- Sockets (`Socket`, `ServerSocket`)
-- Multithreading
-- Buffered I/O
+* Java (Core)
+* Socket Programming (`Socket`, `ServerSocket`)
+* Multithreading
+* Buffered I/O Streams
 
 ---
 
 ## 🛠️ How to Run
 
-### 1. Compile
+### 📌 Step 1 — Compile and Start the Server (Terminal 1)
 
 ```bash
-javac src/Server.java
-javac src/Client.java
-````
-
----
-
-### 2. Start Server
-
-```bash
-java src.Server
+javac server.java & java server
 ```
 
 Output:
 
 ```
-Server started on port 1234
+Server started on 1234
 ```
 
 ---
 
-### 3. Start Clients (Open 2 Terminals)
+### 📌 Step 3 — Start Clients (Terminal 2 & 3)
+
+👉 Open **at least 2–3 separate terminals** for clients
+
+In each terminal, run:
 
 ```bash
-java src.Client
+javac client.java & java client
 ```
 
 ---
 
-### 4. Enter Username
+### 📌 Step 4 — Enter Username
+
+Each client will be prompted:
 
 ```
-Enter your username:
-Alice
+Enter the username:
+```
+
+Example:
+
+```
+palak
 ```
 
 ---
 
-### 💬 Sample Chat
+### 📌 Step 5 — Start Chatting 🎉
 
-c:\Users\palak\OneDrive\Pictures\Screenshots 1\Screenshot 2026-03-19 110622.png
+* Messages are instantly broadcast to all connected clients
+* Each message is tagged with the sender’s username
+
+---
+
+## 💬 Sample Flow
+
+<img width="1920" height="1200" alt="Screenshot 2026-03-19 110622" src="https://github.com/user-attachments/assets/a9eeb626-3e89-4b29-8562-9384566a733f" />
+
 
 ---
 
 ## ⚠️ Limitations (Intentional for Learning)
 
-* No encryption (messages are plain text)
-* Server can read all messages
-* No authentication (anyone can impersonate)
+This phase is intentionally **insecure** to build understanding step-by-step:
+
+* ❌ Messages are in plain text
+* ❌ Server can read all messages
+* ❌ No authentication system
+* ❌ No encryption
 
 ---
 
-## 🔐 Upcoming Phases
+## 🔐 Project Roadmap
 
-* Phase 2: Diffie-Hellman Key Exchange
-* Phase 3: AES Encryption for Messages
-* Phase 4: Man-in-the-Middle (MITM) Attack Simulation
-* Phase 5: Authentication using Digital Signatures
+This project is being built in multiple phases:
+
+### ✅ Phase 1 — Basic Chat System *(Completed)*
+
+* Multi-client communication
+* Message broadcasting
+
+### 🔄 Phase 2 — Diffie-Hellman Key Exchange *(In Progress)*
+
+* Public key exchange
+* Shared secret generation
+
+### ⏳ Phase 3 — AES Encryption
+
+* Encrypt messages before sending
+* Decrypt on receiver side
+
+### ⏳ Phase 4 — MITM Attack Simulation
+
+* Understand real-world vulnerabilities
+
+### ⏳ Phase 5 — Authentication
+
+* Digital signatures
+* Identity verification
 
 ---
 
 ## 🎯 Goal of This Project
 
-To build and break a secure communication system from scratch and understand:
+This is not just a chat app — it’s a **learning system** to understand:
 
+* How secure communication actually works
 * Why encryption alone is not enough
-* How key exchange works
-* How real-world attacks happen
-* How to design secure systems
+* How key exchange protocols behave in real systems
+* How vulnerabilities (like MITM attacks) occur
+* How to design secure architectures
+
+---
+
+## 🧠 Key Learnings So Far
+
+* Implemented full-duplex communication using threads
+* Understood how servers handle multiple clients concurrently
+* Built a scalable communication pipeline
+* Prepared the system for cryptographic integration
 
 ---
 
 ## 👨‍💻 Author
 
-Built as a hands-on learning project to explore cryptography and secure system design.
-
-```
+Built as a deep learning project to explore **cryptography, networking, and secure system design from scratch**.
 
 ---
 
-### 🔍 Key Learning
-
-```markdown
-- Understood full-duplex communication using threads
-- Learned how servers handle multiple clients concurrently
-- Designed a basic communication pipeline for future encryption layers
-```
-
----
