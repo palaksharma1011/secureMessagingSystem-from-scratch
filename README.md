@@ -96,6 +96,8 @@ Reality:
 ---
 
 ## ✅ Solutions Implemented
+<img width="960" height="600" alt="image" src="https://github.com/user-attachments/assets/7e427543-03c6-461c-a076-77fac2f6b56b" />
+
 
 ---
 
