@@ -55,12 +55,12 @@ public class client{
                                 String keyBase64 = message.substring(4).trim();
 
                                     if(keyBase64.isEmpty()){
-                                        System.out.println("⚠️ Empty key ignored");
+                                        System.out.println("Empty key ignored");
                                         return;
                                     }
 
                                     if(keyBase64.length() < 50){ // DH keys are long
-                                        System.out.println("⚠️ Invalid short key ignored");
+                                        System.out.println("Invalid short key ignored");
                                         return;
                                     }
                                 byte[] keyBytes = Base64.getDecoder().decode(keyBase64);
@@ -93,6 +93,9 @@ public class client{
                     System.out.println("Disconnected from server");
                 }
             }).start();
+            // take username input
+            String username = userInput.readLine();
+            out.println(username);   // send username first
             
             // sending to server 
             out.println("KEY:"+publicKeyBase64);

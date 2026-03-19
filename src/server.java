@@ -11,6 +11,7 @@ public class server{
 
     public static class ClientHandler extends Thread{
         private String username;
+        private String publicKey;
 
         private Socket socket;
         private BufferedReader in;
@@ -37,17 +38,6 @@ public class server{
         public void run(){
             try{
                 String message;
-                        while((message = in.readLine()) != null){
-            
-            if(message.startsWith("KEY:")){
-                for(ClientHandler client : clients){
-                    if(client != this){
-                        client.sendMessage(message);
-                    }
-                }
-                break; // ✅ EXIT after key exchange
-            }
-        }
                 out.println("Enter the username: ");
                 username=in.readLine();
 
@@ -58,10 +48,15 @@ public class server{
                 while((message = in.readLine()) != null){
                     System.out.println("[" + username + "] → " + message);
                     if(message.startsWith("KEY:")){
+                        this.publicKey = message;
                         for(ClientHandler client : clients){
                             if(client != this){
                                 client.sendMessage(message); // send RAW
+                                if(client.publicKey != null){
+                                    this.sendMessage(client.publicKey);
                             }
+                            }
+
                         }
                         continue;
                     }
