@@ -20,7 +20,7 @@ public class server{
             this.socket=socket;
 
             try {
-                        // step 5 : listen to message 
+                // step 5 : listen to message 
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(),true);
 
@@ -36,21 +36,39 @@ public class server{
         @Override 
         public void run(){
             try{
+                String message;
+                        while((message = in.readLine()) != null){
+            
+            if(message.startsWith("KEY:")){
+                for(ClientHandler client : clients){
+                    if(client != this){
+                        client.sendMessage(message);
+                    }
+                }
+                break; // ✅ EXIT after key exchange
+            }
+        }
                 out.println("Enter the username: ");
                 username=in.readLine();
 
                 System.out.println(username +" joined the chat");
                 server.broadcast(username + " has joined the chat", this);
-                String message;
-                        // step 6 : broadcast the message to every client 
-
                 
-                while((message = in.readLine())!=null){
-                    System.out.println("Received : "+message);
+                        // step 6 : broadcast the message to every client 
+                while((message = in.readLine()) != null){
+                    System.out.println("[" + username + "] → " + message);
+                    if(message.startsWith("KEY:")){
+                        for(ClientHandler client : clients){
+                            if(client != this){
+                                client.sendMessage(message); // send RAW
+                            }
+                        }
+                        continue;
+                    }
 
+                    // normal messages
                     String fullMessage = "[" + username + "]: " + message;
                     server.broadcast(fullMessage, this);
-
                 }
 
             }catch (IOException e){
