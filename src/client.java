@@ -5,12 +5,14 @@ import java.io.*;
 // step 1 : importing crypto libraries
 
 import javax.crypto.KeyAgreement;
+import javax.crypto.SecretKey;
+
 import java.security.*;
 import java.security.spec.*;
-import java.util.Base64;
 
 public class client{
     public static void main(String[] args){
+        Map<String, SecretKey> sharedKeys = new HashMap<>();
 
         String host="localhost";
         int port=1234;
@@ -49,7 +51,7 @@ public class client{
                     String message;
                     while((message = in.readLine())!=null){
 
-                        if(message.startsWith("KEY:") && !keyEstablished){
+                        if(message.startsWith("KEY:")){
                              
                             try{
                                 String keyBase64 = message.substring(4).trim();
@@ -99,6 +101,7 @@ public class client{
             
             // sending to server 
             out.println("KEY:"+publicKeyBase64);
+
             // thread 2 - send message 
 
             String message;

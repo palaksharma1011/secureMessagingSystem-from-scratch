@@ -54,7 +54,7 @@ public class server{
                                 client.sendMessage(message); // send RAW
                                 if(client.publicKey != null){
                                     this.sendMessage(client.publicKey);
-                            }
+                                }
                             }
 
                         }
@@ -64,6 +64,7 @@ public class server{
                     // normal messages
                     String fullMessage = "[" + username + "]: " + message;
                     server.broadcast(fullMessage, this);
+
                 }
 
             }catch (IOException e){
