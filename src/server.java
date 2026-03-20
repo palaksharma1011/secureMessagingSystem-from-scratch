@@ -64,6 +64,7 @@ public class server{
                         continue;
                     }
 
+
                     // normal messages
                     String fullMessage = "[" + username + "]: " + message;
                     server.broadcast(fullMessage, this);

@@ -121,3 +121,120 @@ This allows:
 * Correct encryption/decryption across all users
 
 ---
+## 📌 🔄 Progress Update: Multi-Client Key Management
+
+### 🚀 What’s New
+
+In this phase, the system was extended to support **secure communication between multiple clients simultaneously** using Diffie-Hellman.
+
+Instead of maintaining a single shared key, the client now maintains a **map of shared keys per user**:
+
+```java
+Map<String, byte[]> sharedKeys;
+```
+
+---
+
+### 🧠 Why This Change Was Needed
+
+Earlier:
+
+* Only one shared key was handled ❌
+* Not scalable beyond 2 clients ❌
+
+Now:
+
+* Each client maintains **independent keys with every other client** ✅
+* Enables true **multi-client secure communication** ✅
+
+---
+
+### 🔐 How It Works
+
+* When a new client joins:
+
+  * Public keys are exchanged via server
+* For every incoming public key:
+
+  * A **new shared secret** is generated
+* The key is stored as:
+
+```text
+Username → Shared Secret Key
+```
+
+Example:
+
+```text
+B → key_AB
+C → key_AC
+D → key_AD
+```
+
+---
+
+### 🎯 Problem Solved
+
+✔️ Supports **N clients dynamically**
+✔️ Enables **pairwise secure channels**
+✔️ Forms the base for **per-user encryption (AES in next phase)**
+
+---
+
+### ⚙️ Thread Safety (Important Improvement)
+
+Since:
+
+* One thread **writes keys** (receiver thread)
+* Another thread **reads keys** (sender thread)
+
+We introduced a thread-safe structure:
+
+```java
+Map<String, byte[]> sharedKeys = new ConcurrentHashMap<>();
+```
+
+---
+
+### 🧩 Why Thread Safety Matters
+
+Without synchronization:
+
+* Race conditions ⚠️
+* Inconsistent data ⚠️
+* Random runtime errors ⚠️
+
+With `ConcurrentHashMap`:
+
+* Safe concurrent read/write ✅
+* No manual synchronization needed ✅
+* Cleaner and more reliable implementation ✅
+
+---
+
+### 🧪 Debug Feature Added
+
+A local command was introduced:
+
+```text
+/keys
+```
+
+This prints all active shared keys (hashed for readability):
+
+```text
+---- Shared Keys ----
+B → <hash>
+C → <hash>
+---------------------
+```
+![alt text](image-3.png)
+
+---
+
+### 📌 Summary
+
+This phase transforms the system from:
+
+* ❌ Single key
+* ✅ Multi-client, scalable, and secure key architecture

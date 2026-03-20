@@ -5,16 +5,13 @@ import java.io.*;
 // step 1 : importing crypto libraries
 
 import javax.crypto.KeyAgreement;
-import javax.crypto.SecretKey;
 
 import java.security.*;
 import java.security.spec.*;
 
 public class client{
-    static byte[] sharedSecret = null;
+    static Map<String, byte[]> sharedKeys = Collections.synchronizedMap(new HashMap<>());
     public static void main(String[] args){
-        Map<String, SecretKey> sharedKeys = new HashMap<>();
-
 
         String host="localhost";
         int port=1234;
@@ -31,7 +28,6 @@ public class client{
             // output to server
             PrintWriter out = new PrintWriter(socket.getOutputStream(),true);
 
-            boolean keyEstablished = false;
             // step 2: generate DH key pair
             KeyPairGenerator keyGen= KeyPairGenerator.getInstance("DH");
             keyGen.initialize(2048);
@@ -44,7 +40,6 @@ public class client{
             byte[] publicKeyBytes = keyPair.getPublic().getEncoded();
             String publicKeyBase64=Base64.getEncoder().encodeToString(publicKeyBytes);
                         
-            final KeyAgreement finalKeyAgree = keyAgree;
 
 
             // thread 1 - receive message 
@@ -56,17 +51,10 @@ public class client{
                         if(message.startsWith("KEY:")){
                              
                             try{
-                                String keyBase64 = message.substring(4).trim();
+                                String[] parts=message.split(":",3);
 
-                                    // if(keyBase64.isEmpty()){
-                                    //     System.out.println("Empty key ignored");
-                                    //     return;
-                                    // }
-
-                                    // if(keyBase64.length() < 50){ // DH keys are long
-                                    //     System.out.println("Invalid short key ignored");
-                                    //     return;
-                                    // }
+                                String otherUsername = parts[1];
+                                String keyBase64 = parts[2];
 
                                 byte[] keyBytes = Base64.getDecoder().decode(keyBase64);
 
@@ -80,29 +68,27 @@ public class client{
                                 ka.init(keyPair.getPrivate());
 
                                 ka.doPhase(otherPublicKey,true);
-                                sharedSecret=ka.generateSecret();
+                                byte[] sharedSecret=ka.generateSecret();
 
-                                
+                                // sharedsecret is stored per user , like this whole code runs for evry user lets say A , then all the clients coming in to establish connection with A will have a seperate key with A storred in map similar for all other clients , each have seperate map for storing their connection key, remeber AB and BA key will be same only 
 
-                                // System.out.println("Shared key is "+sharedSecret);
+                                sharedKeys.put(otherUsername,sharedSecret);
 
-                                System.out.println("Shared key Established");
-                                System.out.println("Key length: " + sharedSecret.length);
-                                
-                                // Optional: show hash for proof
-                                MessageDigest sha = MessageDigest.getInstance("SHA-256");
-                                byte[] hash = sha.digest(sharedSecret);
+                            // Proof
+                            MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                            byte[] hash = sha.digest(sharedSecret);
 
-                                System.out.println("Key hash (proof): " + Base64.getEncoder().encodeToString(hash));
-
-                                // keyEstablished=true;
+                            System.out.println("Key established with " + otherUsername);
+                            System.out.println("Hash: " + Base64.getEncoder().encodeToString(hash));
 
                             }
                             catch(Exception e){
                                 e.printStackTrace();
                             }
 
-                        }else{
+                        }
+
+                        else{
                             System.out.println(message);
                         }
 
@@ -117,14 +103,41 @@ public class client{
             out.println(username);   // send username first
             
             // sending to server 
-            out.println("KEY:"+publicKeyBase64);
+            out.println("KEY:"+username+":"+publicKeyBase64);
 
             // thread 2 - send message 
 
             String message;
-            while((message=userInput.readLine())!=null){
-                out.println(message);
+while((message = userInput.readLine()) != null){
+
+    if(message.equalsIgnoreCase("/keys")){
+        System.out.println("---- Shared Keys ----");
+
+        synchronized(sharedKeys){
+            for(Map.Entry<String, byte[]> entry : sharedKeys.entrySet()){
+                String user = entry.getKey();
+                byte[] key = entry.getValue();
+
+                try{
+                    MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                    byte[] hash = sha.digest(key);
+
+                    String hashBase64 = Base64.getEncoder().encodeToString(hash);
+
+                    System.out.println(user + " → " + hashBase64);
+
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
+        }
+
+        System.out.println("---------------------");
+        continue; // 🚨 DO NOT send to server
+    }
+
+    out.println(message);
+}
 
         }catch(Exception e){
             e.printStackTrace();
