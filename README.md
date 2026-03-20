@@ -87,7 +87,7 @@ This section explains how the system behaves as multiple clients join the chat a
 At present, each client stores only **one shared key**:
 
 ```java
-byte[][] sharedSecret = new byte[1][];
+byte[] sharedSecret=ka.generateSecret();
 ```
 
 ### Impact:
