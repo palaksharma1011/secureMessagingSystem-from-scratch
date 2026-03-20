@@ -11,8 +11,10 @@ import java.security.*;
 import java.security.spec.*;
 
 public class client{
+    static byte[] sharedSecret = null;
     public static void main(String[] args){
         Map<String, SecretKey> sharedKeys = new HashMap<>();
+
 
         String host="localhost";
         int port=1234;
@@ -56,28 +58,43 @@ public class client{
                             try{
                                 String keyBase64 = message.substring(4).trim();
 
-                                    if(keyBase64.isEmpty()){
-                                        System.out.println("Empty key ignored");
-                                        return;
-                                    }
+                                    // if(keyBase64.isEmpty()){
+                                    //     System.out.println("Empty key ignored");
+                                    //     return;
+                                    // }
 
-                                    if(keyBase64.length() < 50){ // DH keys are long
-                                        System.out.println("Invalid short key ignored");
-                                        return;
-                                    }
+                                    // if(keyBase64.length() < 50){ // DH keys are long
+                                    //     System.out.println("Invalid short key ignored");
+                                    //     return;
+                                    // }
+
                                 byte[] keyBytes = Base64.getDecoder().decode(keyBase64);
 
                                 KeyFactory keyFactory = KeyFactory.getInstance("DH");
                                 X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
                                 PublicKey otherPublicKey = keyFactory.generatePublic(keySpec);
 
-                                // generate shared secret 
-                                finalKeyAgree.doPhase(otherPublicKey, true);
-                                byte[] sharedSecret = finalKeyAgree.generateSecret();
+                                
+                                // NEW CHANGE: creating new keyAgreement (fresh state)
+                                KeyAgreement ka=KeyAgreement.getInstance("DH");
+                                ka.init(keyPair.getPrivate());
+
+                                ka.doPhase(otherPublicKey,true);
+                                sharedSecret=ka.generateSecret();
+
+                                
 
                                 // System.out.println("Shared key is "+sharedSecret);
 
                                 System.out.println("Shared key Established");
+                                System.out.println("Key length: " + sharedSecret.length);
+                                
+                                // Optional: show hash for proof
+                                MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                                byte[] hash = sha.digest(sharedSecret);
+
+                                System.out.println("Key hash (proof): " + Base64.getEncoder().encodeToString(hash));
+
                                 // keyEstablished=true;
 
                             }
@@ -100,7 +117,7 @@ public class client{
             out.println(username);   // send username first
             
             // sending to server 
-            out.println("KEY established for "+username);
+            out.println("KEY:"+publicKeyBase64);
 
             // thread 2 - send message 
 

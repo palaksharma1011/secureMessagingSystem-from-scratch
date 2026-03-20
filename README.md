@@ -1,292 +1,123 @@
-# 🔐 Secure Chat Application — Phase 2 (Diffie-Hellman Integration)
+# 🔁 PHASE 3: Multi-Client Handling
 
-## 📌 Overview
-
-This phase represents the integration of **Diffie-Hellman (DH) Key Exchange** into a multi-client chat system. The goal was to move from a simple messaging system to a **cryptography-aware communication system**.
-
-The implementation focuses on:
-
-* Public key exchange between clients
-* Shared secret generation using DH
-* Handling real-world issues in distributed systems
-* Understanding how secure communication actually works
+This section explains how the system behaves as multiple clients join the chat and how key exchange is handled.
 
 ---
 
-## 🚀 What This Version Supports
+## 🧩 Core Idea
 
-* Multi-client chat via server
-* Dynamic client connections
-* Public key exchange using Diffie-Hellman
-* Shared key generation on each client
-* Real-time message handling using threads
-
----
-
-## 🚨 Problems Faced
-
-### ❌ 1. Shared key not establishing on all clients
-
-**Symptoms:**
-
-* Only one side generated the shared key
-* Other clients did not show “Shared key established”
-* Confusion about whether DH was working correctly
+* Each client runs on a separate thread.
+* The server maintains a shared list of all active clients.
+* Messages (including public keys) are broadcast to all other clients.
+* Diffie-Hellman key exchange happens **between every pair of clients**.
 
 ---
 
-### ❌ 2. Large “weird” KEY messages in console
+## 👥 Case 1: Two Clients (A, B)
 
-Example:
+### Flow:
 
-```
-KEY:MIIC...
-```
+1. A joins → sends `KEY_A`
+2. B joins → sends `KEY_B`
+3. Server relays:
 
-**Symptoms:**
+   * `KEY_B` → A
+   * `KEY_A` → B
 
-* Flooding of console
-* Looked like abnormal behavior
+### Result:
 
----
+* A computes `key_AB`
+* B computes `key_AB`
 
-### ❌ 3. Misunderstanding of shared key behavior
-
-Assumption:
-
-```
-All clients should have SAME shared key
-```
+✅ Both share the same secret key
+![alt text](image.png)
 
 ---
 
-## 🧠 Root Cause Analysis
+## 👥 Case 2: Three Clients (A, B, C)
 
-### 🔍 1. One-way key processing
+### Flow:
 
-* Clients were receiving public keys
-* But not properly processing them in all cases
+1. A ↔ B already connected (key_AB exists)
+2. C joins → sends `KEY_C`
+3. Server relays:
 
----
+   * `KEY_C` → A, B
+   * `KEY_A`, `KEY_B` → C
 
-### 🔍 2. Message handling not clearly separated
+### Result:
 
-Initially:
+* A computes `key_AC`
+* B computes `key_BC`
+* C computes:
 
-* All messages treated the same
-* No clear distinction between:
+  * `key_CA`
+  * `key_CB`
 
-  * Chat messages
-  * Key exchange messages
-
----
-
-### 🔍 3. Incorrect expectation from Diffie-Hellman
-
-Reality:
-
-| Pair  | Shared Key |
-| ----- | ---------- |
-| A ↔ B | Same       |
-| A ↔ C | Different  |
-| B ↔ C | Different  |
-
-👉 DH creates **pairwise shared secrets**, not a global key
+⚠️ Each pair has a **different shared key**
+![alt text](image-1.png)
 
 ---
 
-## ✅ Solutions Implemented
-<img width="960" height="600" alt="image" src="https://github.com/user-attachments/assets/7e427543-03c6-461c-a076-77fac2f6b56b" />
+## 👥 Case 3: Four Clients (A, B, C, D)
 
+### Flow:
+
+1. A, B, C already connected
+2. D joins → sends `KEY_D`
+3. Server relays:
+
+   * `KEY_D` → A, B, C
+   * `KEY_A`, `KEY_B`, `KEY_C` → D
+
+### Result:
+
+* New keys formed:
+
+  * A ↔ D → `key_AD`
+  * B ↔ D → `key_BD`
+  * C ↔ D → `key_CD`
+
+  ![alt text](image-2.png)
 
 ---
 
-### 🔧 1. Message Type Handling
+## ⚠️ Current Limitation
 
-Client now checks:
+At present, each client stores only **one shared key**:
 
 ```java
-if(message.startsWith("KEY:"))
+byte[][] sharedSecret = new byte[1][];
 ```
 
-👉 This ensures:
+### Impact:
 
-* Key messages are processed separately
-* Normal chat messages are printed
+* When a new client joins, the previous key gets overwritten
+* Only the **latest connection's key is retained**
 
 ---
 
-### 🔧 2. Public Key Extraction & Validation
+## 🧠 Key Insight
+
+* Diffie-Hellman works **per connection (pair-wise)**
+* In multi-client systems:
+
+  * Total keys grow as connections increase
+  * Proper handling requires storing keys per client
+
+---
+
+## 🚀 Next Improvement
+
+To fully support multi-client encryption:
 
 ```java
-String keyBase64 = message.substring(4).trim();
+Map<String, SecretKey> sharedKeys;
 ```
 
-Added checks:
+This allows:
 
-```java
-if(keyBase64.isEmpty()) return;
-if(keyBase64.length() < 50) return;
-```
-
-👉 Prevents:
-
-* Invalid or corrupted keys
-* Crashes due to bad input
-
----
-
-### 🔧 3. Public Key Reconstruction
-
-```java
-byte[] keyBytes = Base64.getDecoder().decode(keyBase64);
-
-KeyFactory keyFactory = KeyFactory.getInstance("DH");
-X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
-PublicKey otherPublicKey = keyFactory.generatePublic(keySpec);
-```
-
-👉 Converts received key into usable object
-
----
-
-### 🔧 4. Shared Secret Generation
-
-```java
-finalKeyAgree.doPhase(otherPublicKey, true);
-byte[] sharedSecret = finalKeyAgree.generateSecret();
-```
-
-👉 Core Diffie-Hellman logic
-
----
-
-### 🔧 5. Multi-threaded Client Handling
-
-#### Thread 1 → Receive messages
-
-* Listens to server
-* Handles KEY messages
-* Prints chat messages
-
-#### Thread 2 → Send messages
-
-* Takes user input
-* Sends to server
-
-👉 Enables real-time communication
-
----
-
-## 🔐 Key Learning
-
-### ✔ Diffie-Hellman Behavior
-
-```text
-Same shared key → only between 2 clients
-Different pairs → different keys
-```
-
----
-
-### ✔ Why “weird text” appeared
-
-```
-KEY:MIIC...
-```
-
-👉 This is:
-
-* Base64 encoded public key
-* Completely normal
-* Required for key exchange
-
----
-
-### ✔ Why keys looked different
-
-* Each client has different private key
-* Shared secret depends on both participants
-
-👉 Hence:
-
-```
-Different clients → different shared keys
-```
-
----
-
-## ⚠️ Current Limitations
-
-### ❌ 1. Shared keys are not stored properly
-
-```java
-Map<String, SecretKey> sharedKeys = new HashMap<>();
-```
-
-👉 Declared but not used fully
-
----
-
-### ❌ 2. Shared key printed incorrectly
-
-```java
-System.out.println("Shared key is "+sharedSecret);
-```
-
-👉 This prints memory reference, not actual key
-
----
-
-### ❌ 3. No encryption yet
-
-* Messages are still plain text
-* Shared key is not used for AES encryption
-
----
-
-## 🧪 Validation
-
-✔ Clients successfully:
-
-* Send public keys
-* Receive public keys
-* Generate shared secret
-
-✔ No crashes during key exchange
-✔ Stable communication achieved
-
----
-
-## 🚀 What This Phase Achieved
-
-* Integrated real cryptographic protocol
-* Debugged distributed key exchange issues
-* Understood practical behavior of DH
-* Built foundation for secure messaging
-
----
-
-## 🔮 Next Phase
-
-* Store keys per client properly
-* Convert shared secret → AES key
-* Encrypt messages before sending
-* Decrypt messages on receiving side
-
----
-
-## 💡 Final Insight
-
-```
-The issue was not in cryptography,
-but in how messages and data were handled in the system
-```
-
-This phase marks the shift from:
-
-```
-Basic programming → System-level thinking
-```
+* One key per client pair
+* Correct encryption/decryption across all users
 
 ---
