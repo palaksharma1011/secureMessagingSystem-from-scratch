@@ -63,6 +63,20 @@ public class server{
                         }
                         continue;
                     }
+                    if(message.startsWith("MSG:")){
+                        String[] parts = message.split(":",3);
+                        String receiver = parts[1];
+
+                        synchronized(clients){
+                            for(ClientHandler client : clients){
+                                if(client.username.equals(receiver)){
+                                    client.sendMessage("MSG:" + username + ":" + parts[2]);
+                                    break;
+                                }
+                            }
+                        }
+                        continue;
+                    }
 
 
                     // normal messages
