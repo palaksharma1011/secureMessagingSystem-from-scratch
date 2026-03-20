@@ -75,7 +75,7 @@ public class client{
                                 finalKeyAgree.doPhase(otherPublicKey, true);
                                 byte[] sharedSecret = finalKeyAgree.generateSecret();
 
-                                System.out.println("Shared key is "+sharedSecret);
+                                // System.out.println("Shared key is "+sharedSecret);
 
                                 System.out.println("Shared key Established");
                                 // keyEstablished=true;
@@ -100,7 +100,7 @@ public class client{
             out.println(username);   // send username first
             
             // sending to server 
-            out.println("KEY:"+publicKeyBase64);
+            out.println("KEY established for "+username);
 
             // thread 2 - send message 
 

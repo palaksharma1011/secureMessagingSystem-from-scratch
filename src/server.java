@@ -4,7 +4,8 @@ import java.util.*;
 
 public class server{
 
-    public static List<ClientHandler> clients=new ArrayList<>();
+    // public static List<ClientHandler> clients=new ArrayList<>();
+    public static List<ClientHandler> clients = Collections.synchronizedList(new ArrayList<>());
 
     
         // step 4 : thread is created for that client
@@ -49,14 +50,16 @@ public class server{
                     System.out.println("[" + username + "] → " + message);
                     if(message.startsWith("KEY:")){
                         this.publicKey = message;
-                        for(ClientHandler client : clients){
-                            if(client != this){
-                                client.sendMessage(message); // send RAW
-                                if(client.publicKey != null){
-                                    this.sendMessage(client.publicKey);
+                        synchronized(clients){
+                            for(ClientHandler client : clients){
+                                if(client != this){
+                                    client.sendMessage(message); // send RAW
+                                    if(client.publicKey != null){
+                                        this.sendMessage(client.publicKey);
+                                    }
                                 }
-                            }
 
+                            }
                         }
                         continue;
                     }
@@ -77,6 +80,10 @@ public class server{
                 }catch(IOException e){
                     e.printStackTrace();
                 }
+                synchronized(clients){
+                    clients.remove(this);
+                }
+                System.out.println(username+" left the chat");
             }
         }
     }
@@ -84,11 +91,14 @@ public class server{
             // step 6 : broadcast the message to every client 
     public static void broadcast(String message ,ClientHandler sender ){
 
-        for(ClientHandler client:clients){
-            if(client != sender){
-                client.sendMessage(message);
-            }
 
+        synchronized(clients){
+            for(ClientHandler client:clients){
+                if(client != sender){
+                    client.sendMessage(message);
+                }
+
+            }
         }
 
     }
@@ -108,7 +118,9 @@ public class server{
         // step 3 : client connects 
 
                 ClientHandler clientHandler =new ClientHandler(socket);
-                clients.add(clientHandler);
+                    synchronized(clients){
+                        clients.add(clientHandler);
+                    }                
                         // step 5 : listen to message 
                 clientHandler.start();
             }
