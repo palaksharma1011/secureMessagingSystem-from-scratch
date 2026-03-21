@@ -92,7 +92,8 @@ This is enforced via:
 ```text
 AEADBadTagException
 ```
-
+![alt text](image.png)
+![alt text](<Screenshot 2026-03-21 161708.png>)
 ---
 
 ### 🧪 Attack Resistance (Compared to Phase 4A)
