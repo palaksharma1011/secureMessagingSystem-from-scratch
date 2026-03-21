@@ -8,6 +8,7 @@ import javax.crypto.Cipher;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.security.*;
@@ -94,10 +95,11 @@ public class client{
                         }
                         else if(message.startsWith("MSG:")){
                             try{
-                                String[] parts = message.split(":",3);
+                                String[] parts = message.split(":",4);
 
                                 String sender = parts[1];
-                                String encrypted = parts[2];
+                                String iv = parts[2];
+                                String cipher =parts[3];
 
                                 SecretKey key = sharedKeys.get(sender);
 
@@ -105,8 +107,9 @@ public class client{
                                     System.out.println("No key for " + sender);
                                     continue;
                                 }
+                                String combined = iv + ":" + cipher;
 
-                                String decrypted = decrypt(encrypted, key);
+                                String decrypted = decrypt(combined, key);
 
                                 System.out.println(sender + ": " + decrypted);
 
@@ -179,19 +182,38 @@ while((message = userInput.readLine()) != null){
 
     }
     public static String encrypt(String message, SecretKey key) throws Exception {
-    Cipher cipher = Cipher.getInstance("AES");
-    cipher.init(Cipher.ENCRYPT_MODE, key);
 
-    byte[] encrypted = cipher.doFinal(message.getBytes());
+        byte[] iv=new byte[12];
+        SecureRandom random =new SecureRandom();
+        random.nextBytes(iv);
 
-    return Base64.getEncoder().encodeToString(encrypted);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec spec =new GCMParameterSpec(128,iv);
+
+        cipher.init(Cipher.ENCRYPT_MODE,key,spec);
+        byte[] encrypted=cipher.doFinal(message.getBytes());
+
+        String ivBase64 =Base64.getEncoder().encodeToString(iv);
+        String cipherBase64=Base64.getEncoder().encodeToString(encrypted);
+
+        return ivBase64 + ":"+ cipherBase64;
 }
 public static String decrypt(String encryptedMessage, SecretKey key) throws Exception {
-    Cipher cipher = Cipher.getInstance("AES");
-    cipher.init(Cipher.DECRYPT_MODE, key);
 
-    byte[] decoded = Base64.getDecoder().decode(encryptedMessage);
-    byte[] decrypted = cipher.doFinal(decoded);
+    String[] parts=encryptedMessage.split(":",2);
+
+    String ivBase64 = parts[0];
+    String cipherBase64=parts[1];
+
+    byte[] iv=Base64.getDecoder().decode(ivBase64);
+    byte[] encrypted =Base64.getDecoder().decode(cipherBase64);
+
+    Cipher cipher =Cipher.getInstance("AES/GCM/NoPadding");
+    GCMParameterSpec spec=new GCMParameterSpec(128, iv);
+
+    cipher.init(Cipher.DECRYPT_MODE,key,spec);
+
+    byte[] decrypted=cipher.doFinal(encrypted);
 
     return new String(decrypted);
 }

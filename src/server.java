@@ -63,41 +63,41 @@ public class server{
                         }
                         continue;
                     }
-                    if(message.startsWith("MSG:")){
-                        String[] parts = message.split(":",3);
-                        String receiver = parts[1];
-
-                        synchronized(clients){
-                            for(ClientHandler client : clients){
-                                if(client.username.equals(receiver)){
-                                    client.sendMessage("MSG:" + username + ":" + parts[2]);
-                                    break;
-                                }
-                            }
-                        }
-                        continue;
-                    }
                     // if(message.startsWith("MSG:")){
-
                     //     String[] parts = message.split(":",3);
                     //     String receiver = parts[1];
-                    //     String encrypted = parts[2];
-
-                    //     // ⚠️ ATTACK: Modify ciphertext (simulate MITM)
-                    //     if(encrypted.length() > 4){
-                    //         encrypted = encrypted.substring(0, encrypted.length()-2) + "AA";
-                    //     }
 
                     //     synchronized(clients){
                     //         for(ClientHandler client : clients){
                     //             if(client.username.equals(receiver)){
-                    //                 client.sendMessage("MSG:" + username + ":" + encrypted);
+                    //                 client.sendMessage("MSG:" + username + ":" + parts[2]);
                     //                 break;
                     //             }
                     //         }
                     //     }
                     //     continue;
                     // }
+                    if(message.startsWith("MSG:")){
+
+                        String[] parts = message.split(":",3);
+                        String receiver = parts[1];
+                        String encrypted = parts[2];
+
+                        // ⚠️ ATTACK: Modify ciphertext (simulate MITM)
+                        if(encrypted.length() > 4){
+                            encrypted = encrypted.substring(0, encrypted.length()-2) + "AA";
+                        }
+
+                        synchronized(clients){
+                            for(ClientHandler client : clients){
+                                if(client.username.equals(receiver)){
+                                    client.sendMessage("MSG:" + username + ":" + encrypted);
+                                    break;
+                                }
+                            }
+                        }
+                        continue;
+                    }
 
 
                     // normal messages
